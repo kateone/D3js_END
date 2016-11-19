@@ -1,0 +1,230 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Kate 期末專題</title>
+    <script src="https://d3js.org/d3.v3.js"></script>
+
+    <style>
+        body {
+            background: #fff;
+            padding: 50px;
+            margin: 0 auto;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            position: relative;
+        }
+        
+        g.arc text {
+            fill: black;
+            font-size: 13px;
+            width: 100px;
+        }
+        
+        
+        
+        input {
+            font-size: 16px;
+            padding: 10px;
+            margin: 3px;
+            background-color: #ffe5c5;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        
+        h1 {
+            font-size: 48px;
+            /*            text-align: center;*/
+        }
+        
+        p {
+            font-size: 26px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #ccc;
+        }
+        
+    
+        
+        #city {
+            float: left;
+            width: 400px;
+        }
+        
+        svg {
+            float: left;
+            padding-right: 50px;
+            padding-left: 50px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>專題主題：人民萬萬歲</h1>
+    <p>2015年台北市／新北市人民，各年齡層之人口統計，以每十年為一單位計算</p>
+
+    <div>
+        <script>
+            var w = 600;
+            var h = 600;
+            var padding = 0;
+            var letterList = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36"];
+
+            svg();
+
+            d3.csv("people_2.csv", row, function (dataSet) {
+
+                var filtered_dataSet = dataSet.filter(function (d) {
+                    return d.city === "新北市板橋區" && d.date === "2015/12";
+                });
+
+                var sorted_dataSet = filtered_dataSet.sort(function (a, b) {
+                    return d3.descending(a.amount, b.amount);
+                });
+
+                sorted_dataSet.length = 10;
+
+                bind(sorted_dataSet);
+                render(sorted_dataSet);
+                listItems(dataSet);
+            });
+
+            function row(d) {
+
+                d.amount = +d.amount;
+                d.number = +d.number;
+
+                return d;
+            }
+
+            function svg() {
+                d3.select("body").append("svg").attr({
+                    width: w,
+                    height: h
+                });
+                d3.select("svg").append("g").append("rect").attr({
+                    width: "100%",
+                    height: "100%",
+                    fill: "white"
+                });
+
+            }
+
+
+
+
+            function bind(dataSet) {
+
+                var pie = d3.layout.pie()
+                    .value(function (d) {
+                        return d.amount;
+                    });
+
+                console.log(pie(dataSet));
+
+                var selection = d3.select("svg")
+                    .selectAll("g.arc")
+                    .data(pie(dataSet));
+                var g_arc = selection.enter().append("g").attr("class", "arc");
+                g_arc.append("path");
+                g_arc.append("text");
+                selection.exit().remove();
+            }
+
+            function render(dataSet) {
+                var outerR = 300;
+                var innerR = 0;
+                var arc = d3.svg.arc()
+                    .outerRadius(outerR)
+                    .innerRadius(innerR);
+                var fScale = d3.scale.category20c();
+
+
+
+                d3.selectAll("g.arc")
+                    .attr("transform", "translate(" + outerR + "," + outerR + ")")
+                    .select("path")
+                    .attr("d", arc)
+                    .style("fill", function (d, i) {
+                        return fScale(i);
+                    });
+
+                d3.selectAll("g.arc")
+                    .select("text")
+                    .attr("transform", function (d) {
+                        return "translate(" + arc.centroid(d) + ")";
+                    })
+                    .attr("text-anchor", "middle")
+                    .text(function (d) {
+                        return d.data.industry + "人數：" +
+                            d.data.amount;
+
+                    })
+
+
+            }
+
+
+            function listItems(dataSet) {
+
+                var industryArr = dataSet.map(function (d) {
+                    return d.city;
+                });
+
+                var uniqueIndustryArr = unique(industryArr);
+                var filterIndustryArr = uniqueIndustryArr.filter(function (d) {
+                    return d != "";
+                });
+
+                var selection = d3.select("body")
+                    .append("div")
+                    .attr("id", "city")
+                    .selectAll("input")
+                    .data(filterIndustryArr)
+                    .attr({
+                        type: "button",
+                        value: function (d) {
+                            return d;
+                        }
+                    });
+                selection.enter()
+                    .append("input")
+                    .attr({
+                        type: "button",
+                        value: function (d) {
+                            return d;
+                        }
+                    })
+                    .on("click", function (d) {
+                        update(d);
+                    });
+
+                function update(filteredName) {
+                    var newDataSet = dataSet.filter(function (d) {
+                        return d.city === filteredName && d.date === "2015/12";
+                    })
+                    var sorted_dataSet = newDataSet.sort(function (a, b) {
+                        return d3.descending(a.amount, b.amount);
+                    });
+
+                    sorted_dataSet.length = 10;
+
+                    bind(sorted_dataSet);
+                    render(sorted_dataSet);
+                }
+
+            }
+
+            function unique(array) {
+                var n = [];
+                for (var i = 0; i < array.length; i++) {
+                    if (n.indexOf(array[i]) == -1) {
+                        n.push(array[i]);
+                    }
+                }
+                return n;
+            }
+        </script>
+    </div>
+</body>
+
+</html>
